@@ -1,6 +1,18 @@
 # MOZ × RLinf 真机 RLPD 交接说明
 
-本文记录当前对 RLinf、MOZ SDK 与 OpenPI 真机推理栈的代码理解，以及已经和用户确认的开发决策。后续会话应先阅读本文，再继续实现；本文是设计交接，不代表代码已经实现。
+本文记录当前对 RLinf、MOZ SDK 与 OpenPI 真机推理栈的代码理解、已经确认的开发决策，以及首版适配的实现状态。后续会话应先阅读本文，再继续实现。本文中的“已实现”均指当前工作区代码，尚未替代现场的标定和真机验收。
+
+## 0. 当前实现状态（2026-09-22）
+
+首版代码已在当前工作区完成，目标是安全地跑通 demo → replay → update → checkpoint，而非直接承诺抓取成功率。
+
+- 已将 ``packages/mozrobot`` 的 ``MOZ1Robot.connect`` 扩展为 ``auto_reset=False`` 可选模式，并公开 ``disable_external_following_mode()``，使 RLinf 可以只读连接和显式安全停止。
+- 已新增 ``MOZConnection`` / ``MOZRobot``，并注册 ``MOZ`` hardware。连接层是 SDK 的唯一写入者：真实硬件使用本地 120 Hz 保持流；未显式打开 motion gate 时拒绝下发目标；关闭或异常时停用 teleop 与 external following。dummy 模式不导入厂商 SDK。
+- 已新增 ``MozPickLift-v0``：右臂 7D delta action，14D state（右夹爪、右臂关节、右 TCP），头部与右腕各一路 224×224 RGB。真机配置只有在 ``motion_enabled``、``safety_calibrated``、home、工作空间和夹爪范围均齐备时才允许复位和运动。
+- 已新增 ``moz_native`` teleop 适配。它只读取 MOZ 原生 teleop 的目标，将其转换为同一 action contract，再经 ``MOZConnection`` 下发，不创建第二个 SDK 写入者。
+- 已新增采集、两节点异步 CNN RLPD 和 dummy e2e 配置；H100 的 actor/rollout 固定在 GPU 0，MOZ 节点仅运行 environment worker。配置中所有真实序列号和标定值均为禁动占位符。
+- 已补齐 MOZ 安装路由、dummy Docker/CI 路由、单元测试、英中文档、real-world 索引和 README 入口。通用安装不会安装 ROS、驱动或 ``draccus``；MOZ 必须复用已经跑通 π0.5 的运行时。
+- 已完成 Python 语法编译、YAML/Shell 静态检查、Git whitespace 检查和文档符号检查；本地默认 Python 缺少 ``torch``、``draccus``、``docutils`` 及完整 RLinf 依赖，因此尚未在本机执行 RLinf 单测/e2e、Sphinx build 或真实 SDK 集成测试，也没有擅自安装/升级依赖。
 
 ## 1. 当前目标与边界
 

@@ -392,6 +392,63 @@ def test_turtle2_dummy_preserves_legacy_policy_schema():
     _assert_legacy_transition(env)
 
 
+def test_moz_dummy_keeps_the_two_camera_rlpd_schema():
+    """MOZ's SDK-free task exercises its 14-state, two-RGB observation contract."""
+    from rlinf.envs.real.moz import MozPickLiftEnv
+
+    env = MozPickLiftEnv({"is_dummy": True})
+    try:
+        observation, _ = env.reset(seed=5)
+        assert env.action_space.shape == (7,)
+        assert sorted(observation["frames"]) == ["head_rgb", "right_wrist_rgb"]
+        assert sum(value.size for value in observation["state"].values()) == 14
+        assert observation in env.observation_space
+
+        next_observation, reward, terminated, truncated, _ = env.step(
+            np.zeros(7, dtype=np.float32)
+        )
+        assert next_observation in env.observation_space
+        assert reward == 0.0
+        assert not terminated
+        assert not truncated
+    finally:
+        env.close()
+
+
+def test_moz_physical_motion_needs_an_explicit_calibration_marker():
+    """A copied deployment config cannot accidentally unlock a physical MOZ."""
+    from rlinf.envs.real.moz import MozPickLiftConfig
+    from rlinf.robotics import MOZRobotConfig
+
+    config = MozPickLiftConfig(is_dummy=False, motion_enabled=True)
+    with pytest.raises(ValueError, match="safety_calibrated=true"):
+        config.validate_motion(MOZRobotConfig(node_rank=0))
+
+
+def test_moz_native_teleop_uses_the_same_delta_action_schema():
+    """Native MOZ targets are mapped locally without another SDK writer."""
+    from rlinf.envs.real.moz import MozPickLiftEnv
+    from rlinf.robotics.parts.teleop import MOZNativeTeleop
+
+    env = MozPickLiftEnv({"is_dummy": True})
+    device = MOZNativeTeleop()
+    try:
+        env.reset(seed=5)
+        device.connect()
+        teleop_action = device.drive(
+            {
+                "moz_connection": env.get_moz_connection(),
+                "moz_teleop_mapper": env.get_moz_teleop_mapper(),
+            }
+        )
+        assert teleop_action.driving
+        assert teleop_action.parts["arm"].shape == (6,)
+        assert teleop_action.parts["end_effector"].shape == (1,)
+    finally:
+        device.disconnect()
+        env.close()
+
+
 class _TerminatingEnv(gym.Env):
     """Terminates on its second step and counts how often it is reset."""
 
@@ -3191,6 +3248,13 @@ def test_shipped_realworld_task_overrides_contain_no_hardware_fields():
             {"robot_url": "bench", "camera_serials": ["MOCK0001"]},
             ["cam_front"],
             14,
+        ),
+        (
+            "MOZ",
+            "MozPickLift-v0",
+            {"realsense_serials": "head,left_wrist,right_wrist"},
+            ["head_rgb", "right_wrist_rgb"],
+            7,
         ),
         ("Turtle2", "ButtonEnv-v1", {"camera_ids": [0, 2]}, ["wrist_1", "wrist_2"], 7),
     ],

@@ -74,6 +74,8 @@ class ComposedTeleop(TeleopDevice):
         ("joint_positions", "get_joint_positions"),
         ("gripper_open", "get_gripper_open"),
         ("hand_reset_pose", "get_hand_reset_pose"),
+        ("moz_connection", "get_moz_connection"),
+        ("moz_teleop_mapper", "get_moz_teleop_mapper"),
     )
 
     @classmethod

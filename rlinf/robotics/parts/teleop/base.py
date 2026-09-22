@@ -67,6 +67,8 @@ CONTEXT_KEYS = (
     "joint_positions",
     "gripper_open",
     "hand_reset_pose",
+    "moz_connection",
+    "moz_teleop_mapper",
 )
 
 

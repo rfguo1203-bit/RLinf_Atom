@@ -50,6 +50,8 @@ from rlinf.robotics import (
     LegacyObservationAdapter,
     MethodArm,
     MethodEndEffector,
+    MOZRobot,
+    MOZRobotConfig,
     PartGroup,
     Robot,
     RobotAutoConfig,
@@ -65,6 +67,7 @@ from rlinf.robotics.parts.arms import (
     FrankaROSArm,
     FrankyArm,
     GimArm,
+    MOZConnection,
     Turtle2Connection,
 )
 from rlinf.robotics.parts.arms.franka import FrankaRobotState
@@ -527,7 +530,14 @@ def test_every_registered_robot_can_skip_the_enumeration_probe():
 def test_every_registered_robot_carries_a_builder():
     registry = RobotDiscovery.registry
 
-    assert set(registry) >= {"Franka", "DualFranka", "GimArm", "Turtle2", "DOSW1"}
+    assert set(registry) >= {
+        "DOSW1",
+        "DualFranka",
+        "Franka",
+        "GimArm",
+        "MOZ",
+        "Turtle2",
+    }
     missing = sorted(name for name, reg in registry.items() if reg.build is None)
     assert missing == []
 
@@ -541,6 +551,35 @@ def test_dosw1_dummy_runtime_uses_composed_dual_arm_interface():
     assert observation["left"]["arm"]["joint_position"].shape == (6,)
     robot.disconnect()
     assert not robot.is_connected
+
+
+def test_moz_dummy_connection_has_one_motion_gate_and_complete_targets():
+    """The MOZ adapter holds a full target and refuses writes after its gate closes."""
+    robot = MOZRobot.build(is_dummy=True)
+    robot.connect()
+    connection = robot.child("moz", MOZConnection)
+    try:
+        snapshot = connection.get_snapshot()
+        target = connection.hold_target(snapshot)
+        target["rightarm_cmd_cart_pos"] = np.full(6, 0.1, dtype=np.float32)
+        target["rightarm_gripper_cmd_pos"] = np.asarray([0.2], dtype=np.float32)
+
+        connection.enable_motion()
+        connection.submit_target(target)
+        assert np.allclose(connection.get_snapshot().right_tcp_pose, 0.1)
+        assert connection.get_snapshot().right_gripper == pytest.approx(0.2)
+
+        connection.disable_motion()
+        with pytest.raises(RuntimeError, match="motion is disabled"):
+            connection.submit_target(target)
+    finally:
+        robot.disconnect()
+
+
+def test_moz_robot_config_rejects_an_unsupported_structure():
+    """The first real task deliberately limits MOZ to the fixed-base profile."""
+    with pytest.raises(ValueError, match="wholebody_without_base"):
+        MOZRobotConfig(node_rank=0, structure="wholebody")
 
 
 def test_pure_drivers_construct_without_scheduler_or_vendor_sdks():

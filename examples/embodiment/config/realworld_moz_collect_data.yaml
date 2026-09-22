@@ -1,0 +1,89 @@
+# Collect successful native-MOZ teleoperation trajectories at 10 Hz.
+# Make a private calibrated copy before enabling physical motion.
+defaults:
+  - env/realworld_moz_pick_lift@env.eval
+  - override hydra/job_logging: stdout
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+  searchpath:
+    - file://${oc.env:EMBODIED_PATH}/config/
+
+cluster:
+  num_nodes: 1
+  component_placement:
+    env:
+      node_group: moz
+      placement: 0
+  node_groups:
+    - label: moz
+      node_ranks: 0
+      hardware:
+        type: MOZ
+        configs:
+          - node_rank: 0
+            disable_validate: true
+            structure: wholebody_without_base
+            realsense_serials: CALIBRATE_HEAD,CALIBRATE_LEFT_WRIST,CALIBRATE_RIGHT_WRIST
+            camera_resolutions: 224*224,224*224,224*224
+            image_size: [224, 224]
+            robot_control_hz: 120
+            robot_observation_hz: 30
+            left_home_joints: null
+            right_home_joints: null
+            torso_home_joints: null
+            gripper_home_positions: null
+            command_timeout_s: 0.3
+            teleop_config:
+              ros_service_name: teleop_cmd_service
+              teleop_state_topic: teleop_state
+              mix_command_topic: mx_mix_command
+              gripper_command_topic: mx_gripper_command
+              base_command_topic: mx_base_vel_command
+              ros_service_timeout: 5.0
+              topic_timeout: 1.0
+              enable_moz_teleop: true
+
+runner:
+  task_type: embodied
+  logger:
+    log_path: ../results
+    project_name: rlinf
+    experiment_name: moz-pick-lift-collect
+    logger_backends: [tensorboard]
+  num_data_episodes: 50
+  record_task_description: false
+
+seed: 1234
+
+env:
+  group_name: EnvGroup
+  eval:
+    ignore_terminations: false
+    auto_reset: false
+    keyboard_reward_wrapper: start_end
+    teleop: moz_native
+    max_steps_per_rollout_epoch: 150
+    max_episode_steps: 150
+    override_cfg:
+      is_dummy: false
+      motion_enabled: false
+      safety_calibrated: false
+      step_frequency: 10.0
+      max_num_steps: 150
+      translation_action_scale: 0.01
+      rotation_action_scale: 0.05
+      workspace_min: null
+      workspace_max: null
+      gripper_position_min: null
+      gripper_position_max: null
+      reset_settle_s: 1.0
+    data_collection:
+      enabled: true
+      save_dir: ${runner.logger.log_path}/collected_data
+      export_format: pickle
+      only_success: true
+      robot_type: moz
+      fps: 10

@@ -1,0 +1,182 @@
+# First MOZ real-world RLPD run. Copy this file into a private site overlay,
+# fill all CALIBRATE_* fields, then set motion_enabled and safety_calibrated.
+defaults:
+  - env/realworld_moz_pick_lift@env.train
+  - env/realworld_moz_pick_lift@env.eval
+  - model/cnn_policy@actor.model
+  - hybrid_engines/fsdp@actor.fsdp_config
+  - weight_syncer/patch_syncer@weight_syncer
+  - override hydra/job_logging: stdout
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+  searchpath:
+    - file://${oc.env:EMBODIED_PATH}/config/
+
+cluster:
+  num_nodes: 2
+  component_placement:
+    actor:
+      node_group: h100
+      placement: 0
+    rollout:
+      node_group: h100
+      placement: 0
+    env:
+      node_group: moz
+      placement: 0
+  node_groups:
+    - label: h100
+      node_ranks: 0
+    - label: moz
+      node_ranks: 1
+      hardware:
+        type: MOZ
+        configs:
+          - node_rank: 1
+            disable_validate: true
+            structure: wholebody_without_base
+            realsense_serials: CALIBRATE_HEAD,CALIBRATE_LEFT_WRIST,CALIBRATE_RIGHT_WRIST
+            camera_resolutions: 224*224,224*224,224*224
+            image_size: [224, 224]
+            robot_control_hz: 120
+            robot_observation_hz: 30
+            left_home_joints: null
+            right_home_joints: null
+            torso_home_joints: null
+            gripper_home_positions: null
+            command_timeout_s: 0.3
+
+runner:
+  task_type: embodied
+  logger:
+    log_path: ../results
+    project_name: rlinf
+    experiment_name: moz-pick-lift-rlpd
+    logger_backends: [tensorboard]
+  max_epochs: 8000
+  max_steps: -1
+  only_eval: false
+  val_check_interval: -1
+  save_interval: 100
+  resume_dir: null
+  ckpt_path: null
+
+algorithm:
+  update_epoch: 32
+  group_size: 1
+  agg_q: min
+  actor_agg_q: mean
+  enable_drq: true
+  backup_entropy: false
+  critic_subsample_size: 2
+  adv_type: embodied_sac
+  loss_type: embodied_sac
+  loss_agg_func: token-mean
+  bootstrap_type: standard
+  gamma: 0.96
+  tau: 0.01
+  entropy_tuning:
+    alpha_type: softplus
+    initial_alpha: 0.01
+    target_entropy: -7
+    optim:
+      lr: 5.0e-4
+      lr_scheduler: torch_constant
+      clip_grad: 10.0
+  critic_actor_ratio: 2
+  replay_buffer:
+    enable_cache: true
+    cache_size: 200
+    min_buffer_size: 2
+    sample_window_size: 200
+    auto_save: false
+  demo_buffer:
+    enable_cache: true
+    cache_size: 200
+    min_buffer_size: 1
+    sample_window_size: 200
+    load_path: /path/to/moz_success_demos
+    auto_save: false
+  target_update_freq: 1
+
+env:
+  group_name: EnvGroup
+  enable_offload: false
+  train:
+    total_num_envs: 1
+    keyboard_reward_wrapper: eval_control
+    teleop: none
+    max_steps_per_rollout_epoch: 150
+    max_episode_steps: 150
+    override_cfg:
+      is_dummy: false
+      motion_enabled: false
+      safety_calibrated: false
+      step_frequency: 10.0
+      max_num_steps: 150
+      translation_action_scale: 0.01
+      rotation_action_scale: 0.05
+      workspace_min: null
+      workspace_max: null
+      gripper_position_min: null
+      gripper_position_max: null
+      reset_settle_s: 1.0
+  eval:
+    rollout_epoch: 1
+    total_num_envs: 1
+
+rollout:
+  group_name: RolloutGroup
+  backend: huggingface
+  enable_offload: false
+  pipeline_stage_num: 1
+  collect_transitions: true
+  collect_prev_infos: false
+  model:
+    action_dim: 7
+    image_num: 2
+    model_path: /path/to/RLinf-ResNet10-pretrained
+    precision: ${actor.model.precision}
+    num_q_heads: 10
+  enable_torch_compile: true
+
+actor:
+  group_name: ActorGroup
+  training_backend: fsdp
+  micro_batch_size: 256
+  global_batch_size: 256
+  seed: 1234
+  enable_offload: false
+  model:
+    model_path: /path/to/RLinf-ResNet10-pretrained
+    state_dim: 14
+    action_dim: 7
+    image_num: 2
+    num_q_heads: 10
+  optim:
+    lr: 3.0e-4
+    clip_grad: 10.0
+    lr_scheduler: torch_constant
+  critic_optim:
+    clip_grad: 10.0
+    lr: 3.0e-4
+    lr_scheduler: torch_constant
+  fsdp_config:
+    strategy: fsdp
+    sharding_strategy: no_shard
+    mixed_precision:
+      param_dtype: ${actor.model.precision}
+      reduce_dtype: ${actor.model.precision}
+      buffer_dtype: ${actor.model.precision}
+
+reward:
+  use_reward_model: false
+
+critic:
+  use_critic_model: false
+
+weight_syncer:
+  nccl_max_ctas: 32

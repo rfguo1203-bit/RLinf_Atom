@@ -1,7 +1,7 @@
 RL with Real-World Robots
 =========================
 
-Use this section when your starting point is physical robot hardware. Start with Franka if you use a Franka arm or a Franka-based rig; use the other robot pages for GimArm, XSquare Turtle2, Dexmal DOS-W1, AgileX Piper, and SO101.
+Use this section when your starting point is physical robot hardware. Start with Franka if you use a Franka arm or a Franka-based rig; use the other robot pages for MOZ, GimArm, XSquare Turtle2, Dexmal DOS-W1, AgileX Piper, and SO101.
 
 Choose a guide for hardware checks, teleoperation, data collection, sim-to-real transfer, deployment, or online RL.
 
@@ -59,6 +59,15 @@ Choose a guide for hardware checks, teleoperation, data collection, sim-to-real 
          Train a flow-matching + SAC pick task on the Dexmal DOS-W1 dual-arm robot
        </p>
      </div>
+     <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
+       <a href="embodied/moz.html" style="display: block; min-height: 200px; padding: 48px 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+         <b>MOZ</b><br>Right-arm pick-and-lift RLPD
+       </a>
+       <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
+         <a href="embodied/moz.html" style="text-decoration: underline; color: blue;"><b>MOZ</b></a><br>
+         Collect native teleoperation demonstrations, then run two-node CNN RLPD
+       </p>
+     </div>
 
    </div>
 
@@ -91,5 +100,6 @@ Use these guides to connect an arm and run its hardware test script. Piper and S
    GimArm <embodied/gim_arm>
    XSquare Turtle2 <embodied/xsquare_turtle2>
    DOS-W1 <embodied/dosw1>
+   MOZ <embodied/moz>
    Piper <embodied/piper>
    SO101 <embodied/so101>

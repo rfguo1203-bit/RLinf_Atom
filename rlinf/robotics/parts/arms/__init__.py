@@ -47,6 +47,10 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
         PiperArm,
         PiperRobotState,
     )
+    from .moz import (
+        MOZConnection,
+        MOZSnapshot,
+    )
     from .so101 import (
         SO101Arm,
         SO101RobotState,
@@ -72,6 +76,8 @@ _MODULE_BY_NAME: dict[str, str] = {
     "GimArmRobotState": ".gim_arm",
     "PiperArm": ".piper",
     "PiperRobotState": ".piper",
+    "MOZConnection": ".moz",
+    "MOZSnapshot": ".moz",
     "SO101Arm": ".so101",
     "SO101RobotState": ".so101",
     "Turtle2Connection": ".turtle2",
@@ -92,6 +98,8 @@ __all__ = [
     "FrankyArm",
     "GimArm",
     "GimArmRobotState",
+    "MOZConnection",
+    "MOZSnapshot",
     "PiperArm",
     "PiperRobotState",
     "SO101Arm",

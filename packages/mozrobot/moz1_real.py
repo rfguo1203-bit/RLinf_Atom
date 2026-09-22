@@ -56,7 +56,8 @@ class MOZ1Robot(SpiritRobotBase):
         self.cameras = [None]*3
         self.process_manager = get_process_manager()
 
-    def connect(self) -> None:
+    def connect(self, *, auto_reset: bool = True) -> None:
+        """Open the SDK session and optionally move to its configured reset pose."""
         # Create multiprocess log handler for child processes
         from mozrobot.utils import create_multiprocess_log_handler
         self.log_queue, self.log_listener = create_multiprocess_log_handler()
@@ -115,7 +116,8 @@ class MOZ1Robot(SpiritRobotBase):
                 logging.error(f"init step axis controller failed: {e}")
                 self._step_axis_controller = None
 
-        self.reset()
+        if auto_reset:
+            self.reset()
 
     def disconnect(self) -> None:
         try:
@@ -238,6 +240,14 @@ class MOZ1Robot(SpiritRobotBase):
                 "Moz1 robot is not connected. You need to run `robot.connect()`."
             )
         self._env.enable_external_following_mode()
+
+    def disable_external_following_mode(self):
+        """Leave external following mode before resetting or disconnecting."""
+        if self._env is None:
+            raise RobotDeviceNotConnectedError(
+                "Moz1 robot is not connected. You need to run `robot.connect()`."
+            )
+        self._env.disable_external_following_mode()
 
     def reset(self):
         logging.info("Moz1 robot reset")

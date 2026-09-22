@@ -31,6 +31,7 @@ RLinf is a flexible and scalable open-source RL infrastructure designed for Embo
 
 ## What's NEW!
 
+- [2026/09] 🔥 RLinf supports real-world CNN RLPD on the MOZ robot: native teleoperation collection and a two-node H100 + MOZ pick-and-lift workflow. Doc: [Real-World RLPD on MOZ](docs/source-en/rst_source/examples/embodied/moz.rst).
 - [2026/09] 🔥 RLinf supports ApxInf-accelerated evaluation of π₀.₅ on LIBERO. RLinf keeps the native OpenPI transform chain and enters the engine through its L1 inference interface. Doc: [ApxInf LIBERO eval](https://rlinf.readthedocs.io/en/latest/rst_source/evaluations/guides/libero.html#apxinf-backend).
 - [2026/09] 🔥 RLinf supports FSDP supervised fine-tuning and batched LIBERO evaluation for [FastWAM](https://github.com/yuantianyuan01/FastWAM). Doc: [FastWAM Evaluation and SFT](https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/sft_fastwam.html).
 - [2026/08] 🔥 RLinf supports SFT and SGLang-based evaluation of NVIDIA's omnimodal world model, Cosmos3. Docs: [Cosmos3 SFT](https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/sft_cosmos3.html), [SGLang eval](https://rlinf.readthedocs.io/en/latest/rst_source/evaluations/guides/cosmos3_sglang.html).
@@ -264,6 +265,7 @@ RLinf supports SFT, simulation RL, and real-world RL for World Action Models (WA
           <li><a href="https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/dual_franka_index.html">Dual-Arm Franka</a> ✅</li>
           <li><a href="https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/xsquare_turtle2.html">XSquare Turtle2</a> ✅</li>
           <li><a href="https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/dosw1.html">DOS-W1</a> ✅</li>
+          <li><a href="https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/moz.html">MOZ</a> ✅</li>
           <li><a href="https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/gim_arm.html">GimArm</a> ✅</li>
           <li><a href="https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/piper.html">AgileX Piper</a> ✅</li>
           <li><a href="https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/so101.html">SO101</a> ✅</li>

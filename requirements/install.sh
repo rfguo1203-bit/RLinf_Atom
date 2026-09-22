@@ -110,7 +110,7 @@ NO_INSTALL_RLINF_CMD="--no-install-project"
 SUPPORTED_TARGETS=("embodied" "agentic" "docs")
 SUPPORTED_ENGINES=("sglang" "vllm")
 SUPPORTED_MODELS=("openvla" "openvla-oft" "openpi" "gr00t" "gr00t_n1d6" "gr00t_n1d7" "dexbotic" "starvla" "lingbotvla" "dreamzero" "fastwam" "cosmos3" "qwen3_vl" "abot_m0" "molmoact2" "evo1" "diffusion")
-SUPPORTED_ENVS=("behavior" "maniskill_libero" "libero" "metaworld" "calvin" "isaaclab" "robocasa" "robocasa365" "franka" "franka-ros" "frankasim" "robotwin" "habitat" "opensora" "wan" "genesis" "xsquare_turtle2" "liberopro" "liberoplus" "roboverse" "embodichain" "d4rl" "dosw1" "gim_arm" "so101" "piper" "dummy" "polaris")
+SUPPORTED_ENVS=("behavior" "maniskill_libero" "libero" "metaworld" "calvin" "isaaclab" "robocasa" "robocasa365" "franka" "franka-ros" "frankasim" "robotwin" "habitat" "opensora" "wan" "genesis" "xsquare_turtle2" "liberopro" "liberoplus" "roboverse" "embodichain" "d4rl" "dosw1" "gim_arm" "moz" "so101" "piper" "dummy" "polaris")
 
 #=======================Utility Functions=======================
 
@@ -2850,7 +2850,7 @@ install_env_only() {
     # A robot host trains in its env venv, so it takes the same embodied extra,
     # training dependencies and system libraries as a model install.
     case "$ENV_NAME" in
-        franka|franka-ros|so101|piper|dosw1|gim_arm|xsquare_turtle2)
+        franka|franka-ros|so101|piper|dosw1|gim_arm|moz|xsquare_turtle2)
             install_common_embodied_deps
             ;;
     esac
@@ -2893,6 +2893,9 @@ install_env_only() {
             ;;
         dosw1)
             install_dosw1_env
+            ;;
+        moz)
+            install_moz_env
             ;;
         polaris)
             install_polaris_env
@@ -3461,6 +3464,21 @@ install_dosw1_env() {
     local repo_root
     repo_root="$(dirname "$SCRIPT_DIR")"
     uv pip install -e "$repo_root" --no-deps
+}
+
+install_moz_env() {
+    # The controller SDK is tied to the preinstalled ROS runtime on the MOZ
+    # computer. This target intentionally installs only controller-independent
+    # RLinf dependencies, which is enough for the H100 node and the dummy e2e
+    # test. Use the already working pi0.5 runtime on the robot node and expose
+    # this checkout's packages/ directory through PYTHONPATH there.
+    local repo_root
+    repo_root="$(dirname "$SCRIPT_DIR")"
+    if [ ! -d "$repo_root/packages/mozrobot" ]; then
+        echo "[moz] Missing $repo_root/packages/mozrobot; this checkout is incomplete." >&2
+        exit 1
+    fi
+    echo "[moz] Installed generic RLinf dependencies only; vendor ROS and MOZ SDK stay in the existing robot runtime."
 }
 
 install_habitat_env() {

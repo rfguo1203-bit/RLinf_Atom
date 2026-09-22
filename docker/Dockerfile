@@ -61,6 +61,7 @@ FROM base-image-platform-${PLATFORM} AS base-image-embodied-isaaclab
 FROM base-image-platform-${PLATFORM} AS base-image-embodied-robotwin
 FROM base-image-platform-${PLATFORM} AS base-image-embodied-opensora
 FROM base-image-platform-${PLATFORM} AS base-image-embodied-frankasim
+FROM base-image-platform-${PLATFORM} AS base-image-embodied-moz
 FROM base-image-platform-${PLATFORM} AS base-image-embodied-wan
 FROM base-image-platform-${PLATFORM} AS base-image-embodied-liberopro
 FROM base-image-platform-${PLATFORM} AS base-image-embodied-liberoplus
@@ -426,6 +427,17 @@ RUN bash requirements/install.sh ${INSTALL_MIRROR_OPTION} --platform ${RLINF_PLA
 
 # Set default env
 RUN echo "source ${UV_PATH}/openvla/bin/activate" >> ~/.bashrc
+
+##################################################################################################
+# Embodied: MOZ (controller-independent dummy validation)
+##################################################################################################
+FROM embodied-common-image AS embodied-moz-image
+
+# The vendor ROS SDK stays on the physical MOZ computer. This image validates
+# the RLinf task and RLPD stack through its in-process dummy connection.
+RUN bash requirements/install.sh ${INSTALL_MIRROR_OPTION} --platform ${RLINF_PLATFORM} embodied --venv moz --env moz
+
+RUN echo "source ${UV_PATH}/moz/bin/activate" >> ~/.bashrc
 
 ##################################################################################################
 # Embodied: EmbodiChain
